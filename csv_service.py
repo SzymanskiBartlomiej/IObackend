@@ -9,6 +9,9 @@ router = APIRouter()
 
 UPLOAD_FOLDER = 'uploads'
 
+data = None
+
+
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
@@ -23,6 +26,10 @@ async def upload_file(filepath: str):
     filename = os.path.basename(filepath)
     destination = os.path.join(UPLOAD_FOLDER, filename)
 
+    #file to RAM
+    data = pd.read_csv(filepath)
+    data.replace({np.nan: None}, inplace=True)
+
     try:
         shutil.copy(filepath, destination)
     except Exception as e:
@@ -31,44 +38,28 @@ async def upload_file(filepath: str):
     return {"message": "File successfully copied", "filename": filename}
 
 @router.get("/readfile")
-async def read_file(filename: str):
-    filepath = os.path.join(UPLOAD_FOLDER, filename)
-
-    if not os.path.exists(filepath):
-        raise HTTPException(status_code=404, detail="File not found")
-
+async def read_file():
+    if data == None:
+        raise HTTPException(status_code=500, detail="No file found!")
+    
     try:
-        df = pd.read_csv(filepath)
-
-        # Zastąpienie wartości "nan" wartością None
-        df.replace({np.nan: None}, inplace=True)
-
         # zwracamy tylko 20 pierwszych elementów
-        result = df.head(20).to_dict(orient='records')
+        result = data.head(20).to_dict(orient='records')
         return JSONResponse(content=result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.put("/rename")
-async def rename_variables(filename: str, old_name: str, new_name: str):
-    filepath = os.path.join(UPLOAD_FOLDER, filename)
-
-    if not os.path.exists(filepath):
-        raise HTTPException(status_code=404, detail="File not found")
-
+async def rename_variables(old_name: str, new_name: str):
+    if data == None:
+        raise HTTPException(status_code=500, detail="No file found!")
+    
     try:
-        df = pd.read_csv(filepath)
-        if old_name not in df.columns:
-            raise HTTPException(status_code=400, detail=f"Column '{old_name}' does not exist")
-
         # Zmiana nazwy kolumny
-        df.rename(columns={old_name: new_name}, inplace=True)
+        data.rename(columns={old_name: new_name}, inplace=True)
 
-        # Zapisanie zmienionego pliku
-        df.to_csv(filepath, index=False)
-
-        return {"message": f"Variable '{old_name}' renamed to '{new_name}' in file '{filename}'"}
+        return {"message": f"Variable '{old_name}' renamed to '{new_name}'"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
