@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 import os
 import pandas as pd
 import shutil
+from sklearn import preprocessing
 
 router = APIRouter()
 
@@ -65,5 +66,12 @@ async def rename_variables(old_name: str, new_name: str):
     
 @router.put("/normalize")
 async def normalize_data(normalization: str):
-    raise HTTPException(status_code=500, detail=str(e))
+    if data == None:
+        raise HTTPException(status_code=500, detail="No file found!")
+    
+    normalized_data = preprocessing.normalize(data)
+
+    data = normalized_data
+
+    return read_file()
 
