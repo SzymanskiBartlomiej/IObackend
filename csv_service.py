@@ -62,4 +62,8 @@ async def rename_variables(old_name: str, new_name: str):
         return {"message": f"Variable '{old_name}' renamed to '{new_name}'"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.put("/normalize")
+async def normalize_data(normalization: str):
+    raise HTTPException(status_code=500, detail=str(e))
 
