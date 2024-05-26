@@ -1,50 +1,47 @@
 import numpy as np
-from fastapi import APIRouter, HTTPException, FastAPI
+from fastapi import APIRouter, HTTPException, FastAPI, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import os
 import io
+import csv
 import pandas as pd
 
 
 router = APIRouter()
 app = FastAPI()
 
+origins = [
+    "http://localhost:5173",
+    "localhost:5173"
+]
 
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 default_number_of_rows = 10
 
 #global variable for given data
 app.data = None
 
 
-@router.post("/upload")
-async def upload_file(filepath: str):
-    if not os.path.exists(filepath):
-        raise HTTPException(status_code=404, detail="File not found")
+@app.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    contents = await file.read()
+    # Zakładamy, że dane są oddzielone przecinkami (CSV)
+    df = pd.read_csv(io.StringIO(contents.decode('utf-8')), delimiter=';')
 
-    if not filepath.endswith('.csv'):
-        raise HTTPException(status_code=400, detail="File type not allowed")
-    
-    data_string = ""
-    with open(filepath, 'r') as file:
-        data_string = file.read().replace(',', '.')
+    # Usuń wiersze zawierające NaN, Inf lub -Inf
+    df = df.dropna()  # Usuń wiersze z NaN
+    df = df[~df.isin([float('inf'), float('-inf')]).any(axis=1)]  # Usuń wiersze z Inf i -Inf
 
-    #file to RAM
-    app.data = pd.read_csv(io.StringIO(data_string), sep=";")
-
-    #replace , -> . in strings
-    # app.data.map(lambda string: string.replace(",", "."))
-
-    app.data.replace({np.nan: None}, inplace=True)
-
-    #conversion to numeric values
-    for column in app.data.columns:
-        try:
-            app.data[column] = pd.to_numeric(app.data[column])
-        except:
-            app.data[column] = pd.to_datetime(app.data[column])
-
-    return {"message": "File successfully uploaded!"}
-
+    data = df.to_dict(orient="records")
+    return {"filename": file.filename, "data": data}
 
 
 @router.get("/readfile")
