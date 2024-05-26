@@ -29,19 +29,29 @@ default_number_of_rows = 10
 #global variable for given data
 app.data = None
 
+def detect_and_parse(contents: str):
+    df = pd.read_csv(io.StringIO(contents.decode('utf-8')), delimiter=';')
+
+    if len(df.columns) == 1 and ',' in df.iloc[0, 0]:
+        df = pd.read_csv(io.StringIO(contents.decode('utf-8')), delimiter=',')
+
+    return df
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     contents = await file.read()
-    # Zakładamy, że dane są oddzielone przecinkami (CSV)
-    df = pd.read_csv(io.StringIO(contents.decode('utf-8')), delimiter=';')
 
-    # Usuń wiersze zawierające NaN, Inf lub -Inf
-    df = df.dropna()  # Usuń wiersze z NaN
-    df = df[~df.isin([float('inf'), float('-inf')]).any(axis=1)]  # Usuń wiersze z Inf i -Inf
+    df = detect_and_parse(contents)
+
+    df = df.dropna()
+    df = df[~df.isin([float('inf'), float('-inf')]).any(axis=1)]
 
     data = df.to_dict(orient="records")
-    return {"filename": file.filename, "data": data}
+    columns = list(df.columns)
+
+    app.data = data
+
+    return {"filename": file.filename, "data": data, "columns": columns }
 
 
 @router.get("/readfile")
