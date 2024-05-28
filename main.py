@@ -81,7 +81,15 @@ async def rename_variables(old_name: str, new_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-
+@router.put("/convert")
+async def convert_to_numeric():
+    #conversion to numeric values
+    for column in app.data.columns:
+        try:
+            app.data[column] = pd.to_numeric(app.data[column])
+        except:
+            app.data[column] = pd.to_datetime(app.data[column])
+            
 
 @router.put("/normalize")
 async def normalize_data(normalization: str):
