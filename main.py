@@ -6,7 +6,10 @@ import os
 import io
 import csv
 import pandas as pd
-
+from sklearn.decomposition import PCA
+import plotly.express as px
+import plotly.io as pio
+from starlette.responses import StreamingResponse
 
 router = APIRouter()
 app = FastAPI()
@@ -85,10 +88,11 @@ async def rename_variables(old_name: str, new_name: str):
 async def convert_to_numeric():
     #conversion to numeric values
     for column in app.data.columns:
-        try:
-            app.data[column] = pd.to_numeric(app.data[column])
-        except:
-            app.data[column] = pd.to_datetime(app.data[column])
+        if app.data[column].dtype == 'object':
+            try:
+                app.data[column] = pd.to_numeric(app.data[column].str.replace(',', '.'))
+            except:
+                app.data[column] = pd.to_datetime(app.data[column])
             
 
 @router.put("/normalize")
@@ -100,8 +104,14 @@ async def normalize_data(normalization: str):
 
     if normalization == "minmax":
         for column in normalized_data.columns:
+            if normalized_data[column].dtype != np.number:
+                continue
             normalized_data[column] = (normalized_data[column] - normalized_data[column].min()) / (normalized_data[column].max() - normalized_data[column].min())      
-    elif normalization == "other":
+    elif normalization == "standarization":
+        for column in normalized_data.columns:
+            if normalized_data[column].dtype != np.number:
+                continue
+            normalized_data[column] = (normalized_data[column] - normalized_data[column].mean()) / normalized_data[column].std()
         pass
     else:
         raise HTTPException(status_code=400, detail=f"Normalization {normalization} not implemented!!")
@@ -113,11 +123,33 @@ async def normalize_data(normalization: str):
 
 
 @router.put("/pca")
-async def pca_analysis():
-    if app.data.empty:
+async def pca_analysis(n_components: int):
+    if app.data is None or app.data.empty:
         raise HTTPException(status_code=500, detail="No file found!")
-    
-    return {"message": f"PCA completed successfully!"}
+
+    numeric_data = app.data.select_dtypes(include=[np.number])
+
+    if numeric_data.shape[1] < n_components:
+        raise HTTPException(status_code=400,
+                            detail="Number of components is greater than the number of numeric features")
+
+    try:
+        pca = PCA()
+        components = pca.fit_transform(numeric_data)
+        labels = {str(i): f"PC {i+1}" for i in range(n_components)}
+
+        fig = px.scatter_matrix(
+            components,
+            labels=labels,
+            dimensions=range(n_components),
+        )
+
+        fig.update_traces(diagonal_visible=False)
+        png_bytes = pio.to_image(fig, format="png")
+        return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 
