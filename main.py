@@ -46,10 +46,10 @@ async def upload_file(file: UploadFile = File(...)):
     df = df.dropna()
     df = df[~df.isin([float('inf'), float('-inf')]).any(axis=1)]
 
-    data = df.to_dict(orient="records")
-    columns = list(df.columns)
+    app.data = df
 
-    app.data = data
+    data = df.head(default_number_of_rows).to_dict(orient="records")
+    columns = list(df.columns)
 
     return {"filename": file.filename, "data": data, "columns": columns }
 
@@ -60,7 +60,7 @@ async def read_file(n_of_rows: int):
         raise HTTPException(status_code=500, detail="No file found!")
     
     try:
-        result = app.data.head(n_of_rows).to_json(orient='records', lines=True)
+        result = app.data.head(n_of_rows).to_dict(orient='records')
         return JSONResponse(content=result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
