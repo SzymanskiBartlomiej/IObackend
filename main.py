@@ -63,7 +63,7 @@ async def upload_file(file: UploadFile = File(...)):
 
     app.data = df
 
-    data = df.head(default_number_of_rows).to_dict(orient="records")
+    data = df.to_dict(orient="records")
     columns = list(df.columns)
 
     return {"filename": file.filename, "data": data, "columns": columns }
@@ -75,8 +75,9 @@ async def read_file(n_of_rows: int):
         raise HTTPException(status_code=500, detail="No file found!")
     
     try:
-        result = app.data.head(n_of_rows).to_dict(orient='records')
-        return JSONResponse(content=result)
+        if n_of_rows > 0:
+            return JSONResponse(content=app.data.head(n_of_rows).to_dict(orient='records'))
+        return JSONResponse(content=app.to_dict(orient='records'))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
