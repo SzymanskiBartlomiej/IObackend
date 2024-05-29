@@ -2,14 +2,13 @@ import numpy as np
 from fastapi import APIRouter, HTTPException, FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import os
 import io
-import csv
 import pandas as pd
 from sklearn.decomposition import PCA
 import plotly.express as px
 import plotly.io as pio
 from starlette.responses import StreamingResponse
+import json 
 
 router = APIRouter()
 app = FastAPI()
@@ -29,8 +28,10 @@ app.add_middleware(
 )
 default_number_of_rows = 10
 
-#global variable for given data
+
+#GLOBAL VARIABLES
 app.data = None
+app.pca_data = None
 
 def detect_and_parse(contents: str):
     df = pd.read_csv(io.StringIO(contents.decode('utf-8')), delimiter=';')
@@ -93,7 +94,8 @@ async def convert_to_numeric():
                 app.data[column] = pd.to_numeric(app.data[column].str.replace(',', '.'))
             except:
                 app.data[column] = pd.to_datetime(app.data[column])
-            
+    return {"message": f"Conversion completed successfully!"}
+
 
 @router.put("/normalize")
 async def normalize_data(normalization: str):
@@ -118,8 +120,7 @@ async def normalize_data(normalization: str):
 
     app.data = normalized_data
 
-    # return read_file(default_number_of_rows)
-    return {"message": f"Normalization completed successfully!"}
+    return {"message": f"Normalization '{normalization}' completed successfully!"}
 
 
 @router.put("/pca")
@@ -138,18 +139,38 @@ async def pca_analysis(n_components: int):
         components = pca.fit_transform(numeric_data)
         labels = {str(i): f"PC {i+1}" for i in range(n_components)}
 
-        fig = px.scatter_matrix(
-            components,
-            labels=labels,
-            dimensions=range(n_components),
-        )
+        result = {
+            "components" : components.tolist(),
+            "labels" : labels,
+            "dimensions" : [i for i in range(n_components)],
+            "explained_variance" : pca.explained_variance_ratio_.sum()
+        }
 
-        fig.update_traces(diagonal_visible=False)
-        png_bytes = pio.to_image(fig, format="png")
-        return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
+        app.pca_data = result
+
+        return JSONResponse(content=result)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+
+@router.get("/pca/visualization")
+async def pca_visulalization():
+    if app.pca_data is None:
+        raise HTTPException(status_code=500, detail="No PCA data found!")
+    
+    fig = px.scatter_matrix(
+        app.pca_data["components"],
+        labels=app.pca_data["labels"],
+        dimensions=app.pca_data["dimensions"],
+    )
+
+    fig.update_traces(diagonal_visible=False)
+    png_bytes = pio.to_image(fig, format="png")
+
+    return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
+
 
 
 
