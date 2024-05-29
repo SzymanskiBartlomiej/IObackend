@@ -8,7 +8,7 @@ from sklearn.decomposition import PCA
 import plotly.express as px
 import plotly.io as pio
 from starlette.responses import StreamingResponse
-import json 
+import datetime 
 
 router = APIRouter()
 app = FastAPI()
@@ -33,6 +33,10 @@ default_number_of_rows = 10
 app.data = None
 app.pca_data = None
 
+
+
+
+
 def detect_and_parse(contents: str):
     df = pd.read_csv(io.StringIO(contents.decode('utf-8')), delimiter=';')
 
@@ -40,6 +44,13 @@ def detect_and_parse(contents: str):
         df = pd.read_csv(io.StringIO(contents.decode('utf-8')), delimiter=',')
 
     return df
+
+def string_to_date_to_number(date_string):
+    return datetime.datetime.strptime(date_string, "%d.%m.%Y %H:%M").timestamp()
+
+
+
+
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
@@ -93,7 +104,7 @@ async def convert_to_numeric():
             try:
                 app.data[column] = pd.to_numeric(app.data[column].str.replace(',', '.'))
             except:
-                app.data[column] = pd.to_datetime(app.data[column])
+                app.data[column] = app.data[column].map(string_to_date_to_number)
     return {"message": f"Conversion completed successfully!"}
 
 
@@ -114,7 +125,11 @@ async def normalize_data(normalization: str):
             if normalized_data[column].dtype != np.number:
                 continue
             normalized_data[column] = (normalized_data[column] - normalized_data[column].mean()) / normalized_data[column].std()
-        pass
+    elif normalization == "log":
+        for column in normalized_data.columns:
+            if normalized_data[column].dtype != np.number or normalized_data[column].min() <= 0:
+                continue
+            normalized_data[column] = np.log(normalized_data[column])
     else:
         raise HTTPException(status_code=400, detail=f"Normalization {normalization} not implemented!!")
 
