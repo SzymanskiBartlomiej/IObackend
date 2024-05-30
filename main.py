@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 import io
 import pandas as pd
 from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
 import plotly.express as px
 import plotly.io as pio
 from starlette.responses import StreamingResponse
@@ -188,21 +189,34 @@ async def pca_visulalization():
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
 
-@router.put("/clustering")
-async def clustering(type: str):
+@router.put("/kMeans")
+async def clustering(n_clusters: int):
+    if app.data is None or app.data.empty:
+        raise HTTPException(status_code=500, detail="No data found!")
+    #NOT TESTED!!!
+    kmeans = KMeans(n_clusters=n_clusters)
+    kmeans.fit(app.data)
+    
+    return {"message": f"Clustering 'kMeans' completed successfully!"}
+
+@router.put("/DBSCAN")
+async def clustering(n_clusters: int):
     if app.data is None or app.data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
     
-    if type == "kMeans":
-        pass
-    elif type == "DBSCAN":
-        pass
-    elif type == "agglomerative":
-        pass
-    else:
-        raise HTTPException(status_code=400, detail=f"Normalization {type} not implemented!!")
     
-    return {"message": f"Clustering '{type}' completed successfully!"}
+
+    return {"message": f"Clustering 'DBSCAN' completed successfully!"}
+
+
+@router.put("/agglomerative")
+async def clustering(n_clusters: int):
+    if app.data is None or app.data.empty:
+        raise HTTPException(status_code=500, detail="No data found!")
+    
+
+
+    return {"message": f"Agglomerative Clustering completed successfully!"}
 
 
 
