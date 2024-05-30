@@ -197,7 +197,7 @@ async def clustering(type: str):
         pass
     elif type == "DBSCAN":
         pass
-    elif type == "other":
+    elif type == "agglomerative":
         pass
     else:
         raise HTTPException(status_code=400, detail=f"Normalization {type} not implemented!!")
