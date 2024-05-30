@@ -190,7 +190,7 @@ async def pca_visulalization():
 
 
 @router.put("/kMeans")
-async def clustering(n_clusters: int):
+async def clustering_kMeans(n_clusters: int):
     if app.data is None or app.data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
     #NOT TESTED!!!
@@ -200,7 +200,7 @@ async def clustering(n_clusters: int):
     return {"message": f"Clustering 'kMeans' completed successfully!"}
 
 @router.put("/DBSCAN")
-async def clustering(n_clusters: int):
+async def clustering_DBSCAN(n_clusters: int):
     if app.data is None or app.data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
     
@@ -210,7 +210,7 @@ async def clustering(n_clusters: int):
 
 
 @router.put("/agglomerative")
-async def clustering(n_clusters: int):
+async def clustering_agglomerative(n_clusters: int):
     if app.data is None or app.data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
     
