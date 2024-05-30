@@ -72,7 +72,7 @@ async def upload_file(file: UploadFile = File(...)):
 @router.get("/readfile")
 async def read_file(n_of_rows: int):
     if app.data.empty:
-        raise HTTPException(status_code=500, detail="No file found!")
+        raise HTTPException(status_code=500, detail="No data found!")
     
     try:
         if n_of_rows > 0:
@@ -87,7 +87,7 @@ async def read_file(n_of_rows: int):
 @router.put("/rename")
 async def rename_variables(old_name: str, new_name: str):
     if app.data.empty:
-        raise HTTPException(status_code=500, detail="No file found!")
+        raise HTTPException(status_code=500, detail="No data found!")
     
     try:
         # Zmiana nazwy kolumny
@@ -112,7 +112,7 @@ async def convert_to_numeric():
 @router.put("/normalize")
 async def normalize_data(normalization: str):
     if app.data.empty:
-        raise HTTPException(status_code=500, detail="No file found!")
+        raise HTTPException(status_code=500, detail="No data found!")
     
     normalized_data = app.data.copy()
 
@@ -142,7 +142,7 @@ async def normalize_data(normalization: str):
 @router.put("/pca")
 async def pca_analysis(n_components: int):
     if app.data is None or app.data.empty:
-        raise HTTPException(status_code=500, detail="No file found!")
+        raise HTTPException(status_code=500, detail="No data found!")
 
     numeric_data = app.data.select_dtypes(include=[np.number])
 
@@ -188,6 +188,21 @@ async def pca_visulalization():
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
 
+@router.put("/clustering")
+async def clustering(type: str):
+    if app.data is None or app.data.empty:
+        raise HTTPException(status_code=500, detail="No data found!")
+    
+    if type == "kMeans":
+        pass
+    elif type == "DBSCAN":
+        pass
+    elif type == "other":
+        pass
+    else:
+        raise HTTPException(status_code=400, detail=f"Normalization {type} not implemented!!")
+    
+    return {"message": f"Clustering '{type}' completed successfully!"}
 
 
 
