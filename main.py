@@ -10,6 +10,7 @@ import plotly.express as px
 import plotly.io as pio
 from starlette.responses import StreamingResponse
 import datetime 
+from sklearn.cluster import DBSCAN, AgglomerativeClustering
 
 router = APIRouter()
 app = FastAPI()
@@ -33,6 +34,7 @@ default_number_of_rows = 10
 #GLOBAL VARIABLES
 app.data = None
 app.pca_data = None
+app.cluster_data = None
 
 
 
@@ -83,6 +85,17 @@ async def read_file(n_of_rows: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/download")
+async def download_file():
+    if app.data.empty:
+        raise HTTPException(status_code=500, detail="No data found!")
+
+    try:
+        csv_content = app.data.to_csv(index=False).encode('utf-8')
+        return StreamingResponse(iter([csv_content]), media_type="text/csv",
+                                 headers={"Content-Disposition": "attachment; filename=data.csv"})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.put("/rename")
@@ -193,18 +206,20 @@ async def pca_visulalization():
 async def clustering_kMeans(n_clusters: int):
     if app.data is None or app.data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
-    #NOT TESTED!!!
+
     kmeans = KMeans(n_clusters=n_clusters)
-    kmeans.fit(app.data)
+    app.cluster_data = kmeans.fit_predict(app.data)
     
     return {"message": f"Clustering 'kMeans' completed successfully!"}
 
 @router.put("/DBSCAN")
-async def clustering_DBSCAN(n_clusters: int):
+async def clustering_DBSCAN(eps: float, min_samples: int):
     if app.data is None or app.data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
-    
-    
+
+    # NOT TESTED!!!
+    dbscan = DBSCAN(eps=eps, min_samples=min_samples)
+    app.cluster_data = dbscan.fit_predict(app.data)
 
     return {"message": f"Clustering 'DBSCAN' completed successfully!"}
 
@@ -213,10 +228,34 @@ async def clustering_DBSCAN(n_clusters: int):
 async def clustering_agglomerative(n_clusters: int):
     if app.data is None or app.data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
-    
+
+    agglomerative = AgglomerativeClustering(n_clusters=n_clusters)
+    app.cluster_data = agglomerative.fit_predict(app.data)
 
 
     return {"message": f"Agglomerative Clustering completed successfully!"}
+
+
+@router.get("/cluster_visualization")
+async def cluster_visualization():
+    if app.cluster_data is None:
+        raise HTTPException(status_code=500, detail="No clustering data found!")
+
+    # TODO
+
+
+@router.get("/cluster_stats/{cluster_id}")
+async def cluster_statistics(cluster_id: int):
+    if app.cluster_data is None:
+        raise HTTPException(status_code=500, detail="No clustering data found!")
+
+    try:
+        cluster_series = pd.Series(app.cluster_data, index=app.data.index)  # Ensure the same index
+        cluster_data = app.data[cluster_series == cluster_id].reset_index(drop=True)  # Reset index
+        stats = cluster_data.describe()
+        return JSONResponse(content=stats.to_dict())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 
