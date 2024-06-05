@@ -35,6 +35,9 @@ default_number_of_rows = 10
 app.data = None
 app.pca_data = None
 app.cluster_data = None
+app.kMeans_data = None
+app.DBSCAN_data = None
+app.agglomerative_data = None
 
 
 
@@ -104,7 +107,6 @@ async def rename_variables(old_name: str, new_name: str):
         raise HTTPException(status_code=500, detail="No data found!")
     
     try:
-        # Zmiana nazwy kolumny
         app.data.rename(columns={old_name: new_name}, inplace=True)
 
         return {"message": f"Variable '{old_name}' renamed to '{new_name}'"}
@@ -113,7 +115,6 @@ async def rename_variables(old_name: str, new_name: str):
     
 @router.put("/convert")
 async def convert_to_numeric():
-    #conversion to numeric values
     for column in app.data.columns:
         if app.data[column].dtype == 'object':
             try:
@@ -208,9 +209,19 @@ async def clustering_kMeans(n_clusters: int):
         raise HTTPException(status_code=500, detail="No data found!")
 
     kmeans = KMeans(n_clusters=n_clusters)
-    app.cluster_data = kmeans.fit_predict(app.data)
+    app.kMeans_data = kmeans.fit_predict(app.data)
     
     return {"message": f"Clustering 'kMeans' completed successfully!"}
+
+
+@router.put("/kMeans/visualization")
+async def kMeans_visulalization(n_clusters: int):
+    if app.kMeans_data is None:
+        raise HTTPException(status_code=500, detail="No kMeans clustering data found!")
+
+
+    return {"message": f"Agglomerative Clustering completed successfully!"}
+
 
 @router.put("/DBSCAN")
 async def clustering_DBSCAN(eps: float, min_samples: int):
@@ -219,9 +230,18 @@ async def clustering_DBSCAN(eps: float, min_samples: int):
 
     # NOT TESTED!!!
     dbscan = DBSCAN(eps=eps, min_samples=min_samples)
-    app.cluster_data = dbscan.fit_predict(app.data)
+    app.DBSCAN_data = dbscan.fit_predict(app.data)
 
     return {"message": f"Clustering 'DBSCAN' completed successfully!"}
+
+
+@router.put("/DBSCAN/visualization")
+async def DBSCAN_visulalization(n_clusters: int):
+    if app.DBSCAN_data is None:
+        raise HTTPException(status_code=500, detail="No DBSCAN clustering data found!")
+
+
+    return {"message": f"Agglomerative Clustering completed successfully!"}
 
 
 @router.put("/agglomerative")
@@ -236,12 +256,14 @@ async def clustering_agglomerative(n_clusters: int):
     return {"message": f"Agglomerative Clustering completed successfully!"}
 
 
-@router.get("/cluster_visualization")
-async def cluster_visualization():
-    if app.cluster_data is None:
-        raise HTTPException(status_code=500, detail="No clustering data found!")
+@router.put("/agglomerative/visualization")
+async def agglomerative_visulalization(n_clusters: int):
+    if app.agglomerative_data is None:
+        raise HTTPException(status_code=500, detail="No agglomerative clustering data found!")
 
-    # TODO
+
+    return {"message": f"Agglomerative Clustering completed successfully!"}
+
 
 
 @router.get("/cluster_stats/{cluster_id}")
