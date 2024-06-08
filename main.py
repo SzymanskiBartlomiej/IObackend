@@ -9,7 +9,7 @@ from sklearn.cluster import KMeans
 import plotly.express as px
 import plotly.io as pio
 from starlette.responses import StreamingResponse
-import datetime 
+import datetime
 from sklearn.cluster import DBSCAN, AgglomerativeClustering
 
 router = APIRouter()
@@ -35,9 +35,8 @@ default_number_of_rows = 10
 app.data = None
 app.pca_data = None
 app.cluster_data = None
-app.kMeans_data = None
-app.DBSCAN_data = None
-app.agglomerative_data = None
+app.numeric_data = None
+app.normalized_data = None
 
 
 
@@ -79,7 +78,7 @@ async def upload_file(file: UploadFile = File(...)):
 async def read_file(n_of_rows: int):
     if app.data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
-    
+
     try:
         if n_of_rows > 0:
             return JSONResponse(content=app.data.head(n_of_rows).to_dict(orient='records'))
@@ -89,77 +88,109 @@ async def read_file(n_of_rows: int):
 
 
 @router.get("/download")
-async def download_file():
-    if app.data.empty:
-        raise HTTPException(status_code=500, detail="No data found!")
+async def download_file(step: int):
+    if step == 1 and app.data is not None and not app.data.empty:
+        try:
+            csv_content = app.data.to_csv(index=False).encode('utf-8')
+            return StreamingResponse(iter([csv_content]), media_type="text/csv",
+                                     headers={"Content-Disposition": "attachment; filename=data.csv"})
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    if step == 2 and app.normalized_data is not None and not app.normalized_data.empty:
+        try:
+            csv_content = app.normalized_data.to_csv(index=False).encode('utf-8')
+            return StreamingResponse(iter([csv_content]), media_type="text/csv",
+                                     headers={"Content-Disposition": "attachment; filename=data.csv"})
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    if step == 3 and app.cluster_data is not None and not app.cluster_data.empty:
+        try:
+            csv_content = app.cluster_data.to_csv(index=False).encode('utf-8')
+            return StreamingResponse(iter([csv_content]), media_type="text/csv",
+                                     headers={"Content-Disposition": "attachment; filename=data.csv"})
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
-    try:
-        csv_content = app.data.to_csv(index=False).encode('utf-8')
-        return StreamingResponse(iter([csv_content]), media_type="text/csv",
-                                 headers={"Content-Disposition": "attachment; filename=data.csv"})
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
+    raise HTTPException(status_code=500, detail="No data found!")
 
 
 @router.put("/rename")
 async def rename_variables(old_name: str, new_name: str):
     if app.data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
-    
+
     try:
         app.data.rename(columns={old_name: new_name}, inplace=True)
 
         return {"message": f"Variable '{old_name}' renamed to '{new_name}'"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+
+@router.put("/update_value")
+async def update_value(row: int, column: str, new_value: str):
+    if app.data is None or app.data.empty:
+        raise HTTPException(status_code=500, detail="No data found!")
+
+    try:
+        if column not in app.data.columns:
+            raise HTTPException(status_code=400, detail=f"Column '{column}' not found in data!")
+        if row < 0 or row >= len(app.data):
+            raise HTTPException(status_code=400, detail=f"Index '{row}' out of range!")
+
+        app.data.at[row, column] = new_value
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.put("/convert")
 async def convert_to_numeric():
+    app.numeric_data = app.data.copy()
     for column in app.data.columns:
         if app.data[column].dtype == 'object':
             try:
-                app.data[column] = pd.to_numeric(app.data[column].str.replace(',', '.'))
+                app.numeric_data[column] = pd.to_numeric(app.numeric_data[column].str.replace(',', '.'))
             except:
-                app.data[column] = app.data[column].map(string_to_date_to_number)
+                app.numeric_data[column] = app.numeric_data[column].map(string_to_date_to_number)
     return {"message": f"Conversion completed successfully!"}
 
 
 @router.put("/normalize")
 async def normalize_data(normalization: str):
-    if app.data.empty:
+    if app.numeric_data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
-    
-    normalized_data = app.data.copy()
+
+    app.normalized_data = app.numeric_data.copy()
 
     if normalization == "minmax":
-        for column in normalized_data.columns:
-            if normalized_data[column].dtype != np.number:
+        for column in app.normalized_data.columns:
+            if app.normalized_data[column].dtype != np.number:
                 continue
-            normalized_data[column] = (normalized_data[column] - normalized_data[column].min()) / (normalized_data[column].max() - normalized_data[column].min())      
+            app.normalized_data[column] = (app.normalized_data[column] - app.normalized_data[column].min()) / (app.normalized_data[column].max() - app.normalized_data[column].min())
     elif normalization == "standarization":
-        for column in normalized_data.columns:
-            if normalized_data[column].dtype != np.number:
+        for column in app.normalized_data.columns:
+            if app.normalized_data[column].dtype != np.number:
                 continue
-            normalized_data[column] = (normalized_data[column] - normalized_data[column].mean()) / normalized_data[column].std()
+            app.normalized_data[column] = (app.normalized_data[column] - app.normalized_data[column].mean()) / app.normalized_data[column].std()
     elif normalization == "log":
-        for column in normalized_data.columns:
-            if normalized_data[column].dtype != np.number or normalized_data[column].min() <= 0:
+        for column in app.normalized_data.columns:
+            if app.normalized_data[column].dtype != np.number or app.normalized_data[column].min() <= 0:
                 continue
-            normalized_data[column] = np.log(normalized_data[column])
+            app.normalized_data[column] = np.log(app.normalized_data[column])
     else:
         raise HTTPException(status_code=400, detail=f"Normalization {normalization} not implemented!!")
-
-    app.data = normalized_data
 
     return {"message": f"Normalization '{normalization}' completed successfully!"}
 
 
 @router.put("/pca")
 async def pca_analysis(n_components: int):
-    if app.data is None or app.data.empty:
+    if app.normalized_data is None or app.normalized_data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
 
-    numeric_data = app.data.select_dtypes(include=[np.number])
+    numeric_data = app.normalized_data.select_dtypes(include=[np.number])
 
     if numeric_data.shape[1] < n_components:
         raise HTTPException(status_code=400,
@@ -183,14 +214,14 @@ async def pca_analysis(n_components: int):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
 
 
 @router.get("/pca/visualization")
 async def pca_visulalization():
     if app.pca_data is None:
         raise HTTPException(status_code=500, detail="No PCA data found!")
-    
+
     fig = px.scatter_matrix(
         app.pca_data["components"],
         labels=app.pca_data["labels"],
@@ -205,12 +236,12 @@ async def pca_visulalization():
 
 @router.put("/kMeans")
 async def clustering_kMeans(n_clusters: int):
-    if app.data is None or app.data.empty:
+    if app.normalized_data is None or app.normalized_data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
 
     kmeans = KMeans(n_clusters=n_clusters)
-    app.kMeans_data = kmeans.fit_predict(app.data)
-    
+    app.cluster_data = kmeans.fit_predict(app.normalized_data)
+
     return {"message": f"Clustering 'kMeans' completed successfully!"}
 
 
@@ -226,12 +257,12 @@ async def kMeans_visulalization(n_clusters: int):
 
 @router.put("/DBSCAN")
 async def clustering_DBSCAN(eps: float, min_samples: int):
-    if app.data is None or app.data.empty:
+    if app.normalized_data is None or app.normalized_data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
 
     # NOT TESTED!!!
     dbscan = DBSCAN(eps=eps, min_samples=min_samples)
-    app.DBSCAN_data = dbscan.fit_predict(app.data)
+    app.cluster_data = dbscan.fit_predict(app.normalized_data)
 
     return {"message": f"Clustering 'DBSCAN' completed successfully!"}
 
@@ -248,11 +279,11 @@ async def DBSCAN_visulalization(n_clusters: int):
 
 @router.put("/agglomerative")
 async def clustering_agglomerative(n_clusters: int):
-    if app.data is None or app.data.empty:
+    if app.normalized_data is None or app.normalized_data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
 
     agglomerative = AgglomerativeClustering(n_clusters=n_clusters)
-    app.cluster_data = agglomerative.fit_predict(app.data)
+    app.cluster_data = agglomerative.fit_predict(app.normalized_data)
 
 
     return {"message": f"Agglomerative Clustering completed successfully!"}
@@ -260,7 +291,7 @@ async def clustering_agglomerative(n_clusters: int):
 
 @router.put("/agglomerative/visualization")
 async def agglomerative_visulalization(n_clusters: int):
-    if app.agglomerative_data is None:
+    if app.cluster_data is None:
         raise HTTPException(status_code=500, detail="No agglomerative clustering data found!")
 
     #TODO
