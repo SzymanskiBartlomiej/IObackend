@@ -257,6 +257,22 @@ async def kMeans_visulalization(n_clusters: int):
     png_bytes = pio.to_image(fig, format="png")
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
+@router.put("/kMeans/visualization2")
+async def kMeans_visulalization2(n_clusters: int):
+    if app.kMeans_data is None:
+        raise HTTPException(status_code=500, detail="No kMeans clustering data found!")
+
+    a = [0 for _ in range(n_clusters)]
+    for b in app.kMeans_data:
+        a[b] += 1
+
+    fig = px.bar(x=[i for i in range(n_clusters)], y=a,
+                 labels={'x': 'Number of cluster', 'y': 'No. of records in cluster'},
+                 title='Number of records in each cluster')
+
+    png_bytes = pio.to_image(fig, format="png")
+    return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
+
 
 @router.put("/DBSCAN")
 async def clustering_DBSCAN(eps: float, min_samples: int):
@@ -288,6 +304,22 @@ async def DBSCAN_visulalization(n_clusters: int):
     png_bytes = pio.to_image(fig, format="png")
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
+@router.put("/DBSCAN/visualization2")
+async def DBSCAN_visulalization2(n_clusters: int):
+    if app.DBSCAN_data is None:
+        raise HTTPException(status_code=500, detail="No kMeans clustering data found!")
+
+    a = [0 for _ in range(n_clusters)]
+    for b in app.DBSCAN_data:
+        a[b] += 1
+
+    fig = px.bar(x=[i for i in range(n_clusters)], y=a,
+                 labels={'x': 'Number of cluster', 'y': 'No. of records in cluster'},
+                 title='Number of records in each cluster')
+
+    png_bytes = pio.to_image(fig, format="png")
+    return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
+
 
 @router.put("/agglomerative")
 async def clustering_agglomerative(n_clusters: int):
@@ -315,6 +347,22 @@ async def agglomerative_visulalization(n_clusters: int):
         title="Agglomerative Clustering Visualization",
         labels={'x': 'PCA Component 1', 'y': 'PCA Component 2'}
     )
+    png_bytes = pio.to_image(fig, format="png")
+    return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
+
+@router.put("/agglomerative/visualization2")
+async def agglomerative_visulalization2(n_clusters: int):
+    if app.cluster_data is None:
+        raise HTTPException(status_code=500, detail="No kMeans clustering data found!")
+
+    a = [0 for _ in range(n_clusters)]
+    for b in app.cluster_data:
+        a[b] += 1
+
+    fig = px.bar(x=[i for i in range(n_clusters)], y=a,
+                 labels={'x': 'Number of cluster', 'y': 'No. of records in cluster'},
+                 title='Number of records in each cluster')
+
     png_bytes = pio.to_image(fig, format="png")
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
