@@ -20,7 +20,6 @@ origins = [
     "localhost:5173"
 ]
 
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -30,16 +29,12 @@ app.add_middleware(
 )
 default_number_of_rows = 10
 
-
-#GLOBAL VARIABLES
+# GLOBAL VARIABLES
 app.data = None
 app.pca_data = None
 app.cluster_data = None
 app.numeric_data = None
 app.normalized_data = None
-
-
-
 
 
 def detect_and_parse(contents: str):
@@ -50,11 +45,9 @@ def detect_and_parse(contents: str):
 
     return df
 
+
 def string_to_date_to_number(date_string):
     return datetime.datetime.strptime(date_string, "%d.%m.%Y %H:%M").timestamp()
-
-
-
 
 
 @app.post("/upload")
@@ -71,7 +64,7 @@ async def upload_file(file: UploadFile = File(...)):
     data = df.to_dict(orient="records")
     columns = list(df.columns)
 
-    return {"filename": file.filename, "data": data, "columns": columns }
+    return {"filename": file.filename, "data": data, "columns": columns}
 
 
 @router.get("/readfile")
@@ -110,7 +103,6 @@ async def download_file(step: int):
                                      headers={"Content-Disposition": "attachment; filename=data.csv"})
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
-
 
     raise HTTPException(status_code=500, detail="No data found!")
 
@@ -168,12 +160,14 @@ async def normalize_data(normalization: str):
         for column in app.normalized_data.columns:
             if app.normalized_data[column].dtype != np.number:
                 continue
-            app.normalized_data[column] = (app.normalized_data[column] - app.normalized_data[column].min()) / (app.normalized_data[column].max() - app.normalized_data[column].min())
+            app.normalized_data[column] = (app.normalized_data[column] - app.normalized_data[column].min()) / (
+                        app.normalized_data[column].max() - app.normalized_data[column].min())
     elif normalization == "standarization":
         for column in app.normalized_data.columns:
             if app.normalized_data[column].dtype != np.number:
                 continue
-            app.normalized_data[column] = (app.normalized_data[column] - app.normalized_data[column].mean()) / app.normalized_data[column].std()
+            app.normalized_data[column] = (app.normalized_data[column] - app.normalized_data[column].mean()) / \
+                                          app.normalized_data[column].std()
     elif normalization == "log":
         for column in app.normalized_data.columns:
             if app.normalized_data[column].dtype != np.number or app.normalized_data[column].min() <= 0:
@@ -197,15 +191,15 @@ async def pca_analysis(n_components: int):
                             detail="Number of components is greater than the number of numeric features")
 
     try:
-        pca = PCA()
+        pca = PCA(n_components)
         components = pca.fit_transform(numeric_data)
-        labels = {str(i): f"PC {i+1}" for i in range(n_components)}
+        labels = {str(i): f"PC {i + 1}" for i in range(n_components)}
 
         result = {
-            "components" : components.tolist(),
-            "labels" : labels,
-            "dimensions" : [i for i in range(n_components)],
-            "explained_variance" : pca.explained_variance_ratio_.sum()
+            "components": components.tolist(),
+            "labels": labels,
+            "dimensions": [i for i in range(n_components)],
+            "explained_variance": pca.explained_variance_ratio_.sum()
         }
 
         app.pca_data = result
@@ -214,7 +208,6 @@ async def pca_analysis(n_components: int):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 
 @router.get("/pca/visualization")
@@ -247,12 +240,22 @@ async def clustering_kMeans(n_clusters: int):
 
 @router.put("/kMeans/visualization")
 async def kMeans_visulalization(n_clusters: int):
+    print("kmeans_visualization")
     if app.kMeans_data is None:
         raise HTTPException(status_code=500, detail="No kMeans clustering data found!")
 
-    #TODO
-
-    return {"message": f"Agglomerative Clustering completed successfully!"}
+    numeric_data = app.normalized_data.select_dtypes(include=[np.number])
+    pca = PCA(2)
+    components = pca.fit_transform(numeric_data)
+    x = [a[0] for a in components]
+    y = [a[1] for a in components]
+    fig = px.scatter(
+        x=x, y=y, color=app.kMeans_data,
+        title="kMeans Clustering Visualization",
+        labels={'x': 'PCA Component 1', 'y': 'PCA Component 2'}
+    )
+    png_bytes = pio.to_image(fig, format="png")
+    return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
 
 @router.put("/DBSCAN")
@@ -272,9 +275,18 @@ async def DBSCAN_visulalization(n_clusters: int):
     if app.DBSCAN_data is None:
         raise HTTPException(status_code=500, detail="No DBSCAN clustering data found!")
 
-    #TODO
-
-    return {"message": f"Agglomerative Clustering completed successfully!"}
+    numeric_data = app.normalized_data.select_dtypes(include=[np.number])
+    pca = PCA(2)
+    components = pca.fit_transform(numeric_data)
+    x = [a[0] for a in components]
+    y = [a[1] for a in components]
+    fig = px.scatter(
+        x=x, y=y, color=app.DBSCAN_data,
+        title="DBSCAN Clustering Visualization",
+        labels={'x': 'PCA Component 1', 'y': 'PCA Component 2'}
+    )
+    png_bytes = pio.to_image(fig, format="png")
+    return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
 
 @router.put("/agglomerative")
@@ -285,7 +297,6 @@ async def clustering_agglomerative(n_clusters: int):
     agglomerative = AgglomerativeClustering(n_clusters=n_clusters)
     app.cluster_data = agglomerative.fit_predict(app.normalized_data)
 
-
     return {"message": f"Agglomerative Clustering completed successfully!"}
 
 
@@ -294,10 +305,18 @@ async def agglomerative_visulalization(n_clusters: int):
     if app.cluster_data is None:
         raise HTTPException(status_code=500, detail="No agglomerative clustering data found!")
 
-    #TODO
-
-    return {"message": f"Agglomerative Clustering completed successfully!"}
-
+    numeric_data = app.normalized_data.select_dtypes(include=[np.number])
+    pca = PCA(2)
+    components = pca.fit_transform(numeric_data)
+    x = [a[0] for a in components]
+    y = [a[1] for a in components]
+    fig = px.scatter(
+        x=x, y=y, color=app.cluster_data,
+        title="Agglomerative Clustering Visualization",
+        labels={'x': 'PCA Component 1', 'y': 'PCA Component 2'}
+    )
+    png_bytes = pio.to_image(fig, format="png")
+    return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
 
 @router.get("/cluster_stats/{cluster_id}")
@@ -314,14 +333,5 @@ async def cluster_statistics(cluster_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-
-#include router
+# include router
 app.include_router(router)
-
-
-
-
-
-
-
-
