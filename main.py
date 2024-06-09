@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 import io
 import pandas as pd
 from sklearn.decomposition import PCA
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, MeanShift, AffinityPropagation
 import plotly.express as px
 import plotly.io as pio
 from starlette.responses import StreamingResponse
@@ -366,6 +366,97 @@ async def agglomerative_visulalization2(n_clusters: int):
     png_bytes = pio.to_image(fig, format="png")
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
+
+@router.put("/meanShift")
+async def clustering_meanShift(n_clusters: int):
+    if app.normalized_data is None or app.normalized_data.empty:
+        raise HTTPException(status_code=500, detail="No data found!")
+
+    mean_shift = MeanShift()
+    app.cluster_data = mean_shift.fit_predict(app.normalized_data)
+
+    return {"message": f"MeanShift Clustering completed successfully!"}
+
+
+@router.put("/meanShift/visualization")
+async def meanShift_visulalization(n_clusters: int):
+    if app.cluster_data is None:
+        raise HTTPException(status_code=500, detail="No MeanShift clustering data found!")
+
+    numeric_data = app.normalized_data.select_dtypes(include=[np.number])
+    pca = PCA(2)
+    components = pca.fit_transform(numeric_data)
+    x = [a[0] for a in components]
+    y = [a[1] for a in components]
+    fig = px.scatter(
+        x=x, y=y, color=app.cluster_data,
+        title="MeanShift Clustering Visualization",
+        labels={'x': 'PCA Component 1', 'y': 'PCA Component 2'}
+    )
+    png_bytes = pio.to_image(fig, format="png")
+    return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
+
+@router.put("/meanShift/visualization2")
+async def meanShift_visulalization2(n_clusters: int):
+    if app.cluster_data is None:
+        raise HTTPException(status_code=500, detail="No meanShift clustering data found!")
+
+    a = [0 for _ in range(n_clusters)]
+    for b in app.cluster_data:
+        a[b] += 1
+
+    fig = px.bar(x=[i for i in range(n_clusters)], y=a,
+                 labels={'x': 'Number of cluster', 'y': 'No. of records in cluster'},
+                 title='Number of records in each cluster')
+
+    png_bytes = pio.to_image(fig, format="png")
+    return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
+
+
+@router.put("/affinity")
+async def clustering_affinity(n_clusters: int):
+    if app.normalized_data is None or app.normalized_data.empty:
+        raise HTTPException(status_code=500, detail="No data found!")
+
+    affinity = AffinityPropagation()
+    app.cluster_data = affinity.fit_predict(app.normalized_data)
+
+    return {"message": f"Affinity Clustering completed successfully!"}
+
+
+@router.put("/affinity/visualization")
+async def affinity_visulalization(n_clusters: int):
+    if app.cluster_data is None:
+        raise HTTPException(status_code=500, detail="No Affinity clustering data found!")
+
+    numeric_data = app.normalized_data.select_dtypes(include=[np.number])
+    pca = PCA(2)
+    components = pca.fit_transform(numeric_data)
+    x = [a[0] for a in components]
+    y = [a[1] for a in components]
+    fig = px.scatter(
+        x=x, y=y, color=app.cluster_data,
+        title="Affinity Clustering Visualization",
+        labels={'x': 'PCA Component 1', 'y': 'PCA Component 2'}
+    )
+    png_bytes = pio.to_image(fig, format="png")
+    return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
+
+@router.put("/affinity/visualization2")
+async def affinity_visulalization2(n_clusters: int):
+    if app.cluster_data is None:
+        raise HTTPException(status_code=500, detail="No Affinity clustering data found!")
+
+    a = [0 for _ in range(n_clusters)]
+    for b in app.cluster_data:
+        a[b] += 1
+
+    fig = px.bar(x=[i for i in range(n_clusters)], y=a,
+                 labels={'x': 'Number of cluster', 'y': 'No. of records in cluster'},
+                 title='Number of records in each cluster')
+
+    png_bytes = pio.to_image(fig, format="png")
+    return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
 @router.get("/cluster_stats/{cluster_id}")
 async def cluster_statistics(cluster_id: int):
