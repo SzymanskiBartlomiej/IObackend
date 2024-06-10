@@ -33,6 +33,8 @@ default_number_of_rows = 10
 app.data = None
 app.pca_data = None
 app.cluster_data = None
+app.kMeans_data=None
+app.DBSCAN_data=None
 app.numeric_data = None
 app.normalized_data = None
 
@@ -234,6 +236,7 @@ async def clustering_kMeans(n_clusters: int):
 
     kmeans = KMeans(n_clusters=n_clusters)
     app.cluster_data = kmeans.fit_predict(app.normalized_data)
+    app.kMeans_data=app.cluster_data
 
     return {"message": f"Clustering 'kMeans' completed successfully!"}
 
@@ -282,6 +285,7 @@ async def clustering_DBSCAN(eps: float, min_samples: int):
     # NOT TESTED!!!
     dbscan = DBSCAN(eps=eps, min_samples=min_samples)
     app.cluster_data = dbscan.fit_predict(app.normalized_data)
+    app.DBSCAN_data=app.cluster_data
 
     return {"message": f"Clustering 'DBSCAN' completed successfully!"}
 
