@@ -229,16 +229,7 @@ async def pca_visulalization():
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
 
-@router.get("/kMeans/{n_clusters}")
-async def clustering_kMeans(n_clusters: int):
-    if app.normalized_data is None or app.normalized_data.empty:
-        raise HTTPException(status_code=500, detail="No data found!")
 
-    kmeans = KMeans(n_clusters=n_clusters)
-    app.cluster_data = kmeans.fit_predict(app.normalized_data)
-    app.kMeans_data=app.cluster_data
-
-    return {"message": f"Clustering 'kMeans' completed successfully!"}
 
 
 @router.get("/kMeans/visualization")
@@ -277,17 +268,17 @@ async def kMeans_visulalization2(n_clusters: int):
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
 
-@router.get("/DBSCAN/{eps}/{min_samples}")
-async def clustering_DBSCAN(eps: float, min_samples: int):
+@router.get("/kMeans/{n_clusters}")
+async def clustering_kMeans(n_clusters: int):
     if app.normalized_data is None or app.normalized_data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
 
-    # NOT TESTED!!!
-    dbscan = DBSCAN(eps=eps, min_samples=min_samples)
-    app.cluster_data = dbscan.fit_predict(app.normalized_data)
-    app.DBSCAN_data=app.cluster_data
+    kmeans = KMeans(n_clusters=n_clusters)
+    app.cluster_data = kmeans.fit_predict(app.normalized_data)
+    app.kMeans_data=app.cluster_data
 
-    return {"message": f"Clustering 'DBSCAN' completed successfully!"}
+    return {"message": f"Clustering 'kMeans' completed successfully!"}
+
 
 
 @router.get("/DBSCAN/visualization")
@@ -325,15 +316,19 @@ async def DBSCAN_visulalization2(n_clusters: int):
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
 
-@router.get("/agglomerative/{n_clusters}")
-async def clustering_agglomerative(n_clusters: int):
+@router.get("/DBSCAN/{eps}/{min_samples}")
+async def clustering_DBSCAN(eps: float, min_samples: int):
     if app.normalized_data is None or app.normalized_data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
 
-    agglomerative = AgglomerativeClustering(n_clusters=n_clusters)
-    app.cluster_data = agglomerative.fit_predict(app.normalized_data)
+    # NOT TESTED!!!
+    dbscan = DBSCAN(eps=eps, min_samples=min_samples)
+    app.cluster_data = dbscan.fit_predict(app.normalized_data)
+    app.DBSCAN_data=app.cluster_data
 
-    return {"message": f"Agglomerative Clustering completed successfully!"}
+    return {"message": f"Clustering 'DBSCAN' completed successfully!"}
+
+
 
 
 @router.get("/agglomerative/visualization")
@@ -370,6 +365,15 @@ async def agglomerative_visulalization2(n_clusters: int):
     png_bytes = pio.to_image(fig, format="png")
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
+@router.get("/agglomerative/{n_clusters}")
+async def clustering_agglomerative(n_clusters: int):
+    if app.normalized_data is None or app.normalized_data.empty:
+        raise HTTPException(status_code=500, detail="No data found!")
+
+    agglomerative = AgglomerativeClustering(n_clusters=n_clusters)
+    app.cluster_data = agglomerative.fit_predict(app.normalized_data)
+
+    return {"message": f"Agglomerative Clustering completed successfully!"}
 
 @router.get("/meanShift")
 async def clustering_meanShift():
@@ -405,11 +409,11 @@ async def meanShift_visulalization2(n_clusters: int):
     if app.cluster_data is None:
         raise HTTPException(status_code=500, detail="No meanShift clustering data found!")
 
-    a = [0 for _ in range(n_clusters)]
+    a = [0 for _ in range(max(app.cluster_data)+1)]
     for b in app.cluster_data:
         a[b] += 1
 
-    fig = px.bar(x=[i for i in range(n_clusters)], y=a,
+    fig = px.bar(x=[i for i in range(max(app.cluster_data)+1)], y=a,
                  labels={'x': 'Number of cluster', 'y': 'No. of records in cluster'},
                  title='Number of records in each cluster')
 
@@ -451,11 +455,11 @@ async def affinity_visulalization2(n_clusters: int):
     if app.cluster_data is None:
         raise HTTPException(status_code=500, detail="No Affinity clustering data found!")
 
-    a = [0 for _ in range(n_clusters)]
+    a = [0 for _ in range(max(app.cluster_data)+1)]
     for b in app.cluster_data:
         a[b] += 1
 
-    fig = px.bar(x=[i for i in range(n_clusters)], y=a,
+    fig = px.bar(x=[i for i in range(max(app.cluster_data)+1)], y=a,
                  labels={'x': 'Number of cluster', 'y': 'No. of records in cluster'},
                  title='Number of records in each cluster')
 
