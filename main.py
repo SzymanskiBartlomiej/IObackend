@@ -383,11 +383,11 @@ async def agglomerative_visulalization2(n_clusters: int):
     if app.cluster_data is None:
         raise HTTPException(status_code=500, detail="No kMeans clustering data found!")
 
-    a = [0 for _ in range(n_clusters)]
+    a = [0 for _ in range(max(app.cluster_data)+1)]
     for b in app.cluster_data:
         a[b] += 1
 
-    fig = px.bar(x=[i for i in range(n_clusters)], y=a,
+    fig = px.bar(x=[i for i in range(max(app.cluster_data)+1)], y=a,
                  labels={'x': 'Number of cluster', 'y': 'No. of records in cluster'},
                  title='Number of records in each cluster')
 
