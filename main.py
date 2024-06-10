@@ -229,7 +229,7 @@ async def pca_visulalization():
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
 
-@router.put("/kMeans")
+@router.get("/kMeans/{n_clusters}")
 async def clustering_kMeans(n_clusters: int):
     if app.normalized_data is None or app.normalized_data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
@@ -241,8 +241,8 @@ async def clustering_kMeans(n_clusters: int):
     return {"message": f"Clustering 'kMeans' completed successfully!"}
 
 
-@router.put("/kMeans/visualization")
-async def kMeans_visulalization(n_clusters: int):
+@router.get("/kMeans/visualization")
+async def kMeans_visulalization():
     print("kmeans_visualization")
     if app.kMeans_data is None:
         raise HTTPException(status_code=500, detail="No kMeans clustering data found!")
@@ -260,7 +260,7 @@ async def kMeans_visulalization(n_clusters: int):
     png_bytes = pio.to_image(fig, format="png")
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
-@router.put("/kMeans/visualization2")
+@router.get("/kMeans/visualization2/{n_clusters}")
 async def kMeans_visulalization2(n_clusters: int):
     if app.kMeans_data is None:
         raise HTTPException(status_code=500, detail="No kMeans clustering data found!")
@@ -277,7 +277,7 @@ async def kMeans_visulalization2(n_clusters: int):
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
 
-@router.put("/DBSCAN")
+@router.get("/DBSCAN/{eps}/{min_samples}")
 async def clustering_DBSCAN(eps: float, min_samples: int):
     if app.normalized_data is None or app.normalized_data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
@@ -290,8 +290,8 @@ async def clustering_DBSCAN(eps: float, min_samples: int):
     return {"message": f"Clustering 'DBSCAN' completed successfully!"}
 
 
-@router.put("/DBSCAN/visualization")
-async def DBSCAN_visulalization(n_clusters: int):
+@router.get("/DBSCAN/visualization")
+async def DBSCAN_visulalization():
     if app.DBSCAN_data is None:
         raise HTTPException(status_code=500, detail="No DBSCAN clustering data found!")
 
@@ -308,7 +308,7 @@ async def DBSCAN_visulalization(n_clusters: int):
     png_bytes = pio.to_image(fig, format="png")
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
-@router.put("/DBSCAN/visualization2")
+@router.get("/DBSCAN/visualization2/{n_clusters}")
 async def DBSCAN_visulalization2(n_clusters: int):
     if app.DBSCAN_data is None:
         raise HTTPException(status_code=500, detail="No kMeans clustering data found!")
@@ -325,7 +325,7 @@ async def DBSCAN_visulalization2(n_clusters: int):
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
 
-@router.put("/agglomerative")
+@router.get("/agglomerative/{n_clusters}")
 async def clustering_agglomerative(n_clusters: int):
     if app.normalized_data is None or app.normalized_data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
@@ -336,8 +336,8 @@ async def clustering_agglomerative(n_clusters: int):
     return {"message": f"Agglomerative Clustering completed successfully!"}
 
 
-@router.put("/agglomerative/visualization")
-async def agglomerative_visulalization(n_clusters: int):
+@router.get("/agglomerative/visualization")
+async def agglomerative_visulalization():
     if app.cluster_data is None:
         raise HTTPException(status_code=500, detail="No agglomerative clustering data found!")
 
@@ -354,7 +354,7 @@ async def agglomerative_visulalization(n_clusters: int):
     png_bytes = pio.to_image(fig, format="png")
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
-@router.put("/agglomerative/visualization2")
+@router.get("/agglomerative/visualization2/{n_clusters}")
 async def agglomerative_visulalization2(n_clusters: int):
     if app.cluster_data is None:
         raise HTTPException(status_code=500, detail="No kMeans clustering data found!")
@@ -371,8 +371,8 @@ async def agglomerative_visulalization2(n_clusters: int):
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
 
-@router.put("/meanShift")
-async def clustering_meanShift(n_clusters: int):
+@router.get("/meanShift")
+async def clustering_meanShift():
     if app.normalized_data is None or app.normalized_data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
 
@@ -382,8 +382,8 @@ async def clustering_meanShift(n_clusters: int):
     return {"message": f"MeanShift Clustering completed successfully!"}
 
 
-@router.put("/meanShift/visualization")
-async def meanShift_visulalization(n_clusters: int):
+@router.get("/meanShift/visualization")
+async def meanShift_visulalization():
     if app.cluster_data is None:
         raise HTTPException(status_code=500, detail="No MeanShift clustering data found!")
 
@@ -400,7 +400,7 @@ async def meanShift_visulalization(n_clusters: int):
     png_bytes = pio.to_image(fig, format="png")
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
-@router.put("/meanShift/visualization2")
+@router.get("/meanShift/visualization2/{n_clusters}")
 async def meanShift_visulalization2(n_clusters: int):
     if app.cluster_data is None:
         raise HTTPException(status_code=500, detail="No meanShift clustering data found!")
@@ -417,8 +417,8 @@ async def meanShift_visulalization2(n_clusters: int):
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
 
-@router.put("/affinity")
-async def clustering_affinity(n_clusters: int):
+@router.get("/affinity")
+async def clustering_affinity():
     if app.normalized_data is None or app.normalized_data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
 
@@ -428,8 +428,8 @@ async def clustering_affinity(n_clusters: int):
     return {"message": f"Affinity Clustering completed successfully!"}
 
 
-@router.put("/affinity/visualization")
-async def affinity_visulalization(n_clusters: int):
+@router.get("/affinity/visualization")
+async def affinity_visulalization():
     if app.cluster_data is None:
         raise HTTPException(status_code=500, detail="No Affinity clustering data found!")
 
@@ -446,7 +446,7 @@ async def affinity_visulalization(n_clusters: int):
     png_bytes = pio.to_image(fig, format="png")
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
-@router.put("/affinity/visualization2")
+@router.get("/affinity/visualization2/{n_clusters}")
 async def affinity_visulalization2(n_clusters: int):
     if app.cluster_data is None:
         raise HTTPException(status_code=500, detail="No Affinity clustering data found!")
