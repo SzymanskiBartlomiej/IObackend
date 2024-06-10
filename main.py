@@ -207,7 +207,7 @@ async def normalize_data(normalization: str):
     else:
         raise HTTPException(status_code=400, detail=f"Normalization {normalization} not implemented!!")
 
-    return {"message": f"Normalization '{normalization}' completed successfully!"}
+    return {"data": list(app.normalized_data.to_dict(orient="records"))}
 
 
 @router.put("/pca")
