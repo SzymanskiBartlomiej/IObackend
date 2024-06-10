@@ -31,6 +31,7 @@ default_number_of_rows = 10
 
 # GLOBAL VARIABLES
 app.data = None
+app.data_before_selection = None
 app.pca_data = None
 app.cluster_data = None
 app.kMeans_data=None
@@ -137,6 +138,34 @@ async def update_value(row: int, column: str, new_value: str):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/select")
+async def select_data(columns: list[str]):
+    if app.data is None or app.data.empty:
+        raise HTTPException(status_code=500, detail="No data found!")
+    
+    if app.data_before_selection is None:
+        app.data_before_selection = app.data.copy()
+    
+    try:
+        app.data = app.data[columns]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    return {"message": f"Selection completed successfully!"}
+    
+
+    
+@router.put("/unselect")
+async def unselect_data():
+    if app.data is None or app.data.empty or app.data_before_selection is None or app.data_before_selection.empty:
+        raise HTTPException(status_code=500, detail="No data found!")
+    
+    app.data = app.data_before_selection.copy()
+    app.data_before_selection = None
+
+    return {"message": f"Unselection completed successfully!"}
 
 
 @router.put("/convert")
