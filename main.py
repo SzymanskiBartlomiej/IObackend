@@ -34,8 +34,8 @@ app.data = None
 app.data_before_selection = None
 app.pca_data = None
 app.cluster_data = None
-app.kMeans_data=None
-app.DBSCAN_data=None
+app.kMeans_data = None
+app.DBSCAN_data = None
 app.numeric_data = None
 app.normalized_data = None
 
@@ -144,24 +144,23 @@ async def update_value(row: int, column: str, new_value: str):
 async def select_data(columns: list[str]):
     if app.data is None or app.data.empty:
         raise HTTPException(status_code=500, detail="No data found!")
-    
+
     if app.data_before_selection is None:
         app.data_before_selection = app.data.copy()
-    
+
     try:
         app.data = app.data[columns]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
-    return {"message": f"Selection completed successfully!"}
-    
 
-    
+    return {"message": f"Selection completed successfully!"}
+
+
 @router.put("/unselect")
 async def unselect_data():
     if app.data is None or app.data.empty or app.data_before_selection is None or app.data_before_selection.empty:
         raise HTTPException(status_code=500, detail="No data found!")
-    
+
     app.data = app.data_before_selection.copy()
     app.data_before_selection = None
 
@@ -192,7 +191,7 @@ async def normalize_data(normalization: str):
             if app.normalized_data[column].dtype != np.number:
                 continue
             app.normalized_data[column] = (app.normalized_data[column] - app.normalized_data[column].min()) / (
-                        app.normalized_data[column].max() - app.normalized_data[column].min())
+                    app.normalized_data[column].max() - app.normalized_data[column].min())
     elif normalization == "standarization":
         for column in app.normalized_data.columns:
             if app.normalized_data[column].dtype != np.number:
@@ -258,12 +257,8 @@ async def pca_visulalization():
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
 
-
-
-
 @router.get("/kMeans/visualization")
 async def kMeans_visulalization():
-    print("kmeans_visualization")
     if app.kMeans_data is None:
         raise HTTPException(status_code=500, detail="No kMeans clustering data found!")
 
@@ -280,16 +275,17 @@ async def kMeans_visulalization():
     png_bytes = pio.to_image(fig, format="png")
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
+
 @router.get("/kMeans/visualization2/{n_clusters}")
 async def kMeans_visulalization2(n_clusters: int):
     if app.kMeans_data is None:
         raise HTTPException(status_code=500, detail="No kMeans clustering data found!")
 
-    a = [0 for _ in range(n_clusters)]
+    a = [0 for _ in range(max(app.kMeans_data) + 1)]
     for b in app.kMeans_data:
         a[b] += 1
 
-    fig = px.bar(x=[i for i in range(n_clusters)], y=a,
+    fig = px.bar(x=[i for i in range(max(app.kMeans_data) + 1)], y=a,
                  labels={'x': 'Number of cluster', 'y': 'No. of records in cluster'},
                  title='Number of records in each cluster')
 
@@ -304,10 +300,9 @@ async def clustering_kMeans(n_clusters: int):
 
     kmeans = KMeans(n_clusters=n_clusters)
     app.cluster_data = kmeans.fit_predict(app.normalized_data)
-    app.kMeans_data=app.cluster_data
+    app.kMeans_data = app.cluster_data
 
     return {"message": f"Clustering 'kMeans' completed successfully!"}
-
 
 
 @router.get("/DBSCAN/visualization")
@@ -328,16 +323,17 @@ async def DBSCAN_visulalization():
     png_bytes = pio.to_image(fig, format="png")
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
+
 @router.get("/DBSCAN/visualization2/{n_clusters}")
 async def DBSCAN_visulalization2(n_clusters: int):
     if app.DBSCAN_data is None:
         raise HTTPException(status_code=500, detail="No kMeans clustering data found!")
 
-    a = [0 for _ in range(n_clusters)]
+    a = [0 for _ in range(max(app.DBSCAN_data) + 2)]
     for b in app.DBSCAN_data:
         a[b] += 1
 
-    fig = px.bar(x=[i for i in range(n_clusters)], y=a,
+    fig = px.bar(x=[i for i in range(max(app.DBSCAN_data) + 2)], y=a,
                  labels={'x': 'Number of cluster', 'y': 'No. of records in cluster'},
                  title='Number of records in each cluster')
 
@@ -353,11 +349,9 @@ async def clustering_DBSCAN(eps: float, min_samples: int):
     # NOT TESTED!!!
     dbscan = DBSCAN(eps=eps, min_samples=min_samples)
     app.cluster_data = dbscan.fit_predict(app.normalized_data)
-    app.DBSCAN_data=app.cluster_data
+    app.DBSCAN_data = app.cluster_data
 
     return {"message": f"Clustering 'DBSCAN' completed successfully!"}
-
-
 
 
 @router.get("/agglomerative/visualization")
@@ -378,21 +372,23 @@ async def agglomerative_visulalization():
     png_bytes = pio.to_image(fig, format="png")
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
+
 @router.get("/agglomerative/visualization2/{n_clusters}")
 async def agglomerative_visulalization2(n_clusters: int):
     if app.cluster_data is None:
         raise HTTPException(status_code=500, detail="No kMeans clustering data found!")
 
-    a = [0 for _ in range(max(app.cluster_data)+1)]
+    a = [0 for _ in range(max(app.cluster_data) + 1)]
     for b in app.cluster_data:
         a[b] += 1
 
-    fig = px.bar(x=[i for i in range(max(app.cluster_data)+1)], y=a,
+    fig = px.bar(x=[i for i in range(max(app.cluster_data) + 1)], y=a,
                  labels={'x': 'Number of cluster', 'y': 'No. of records in cluster'},
                  title='Number of records in each cluster')
 
     png_bytes = pio.to_image(fig, format="png")
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
+
 
 @router.get("/agglomerative/{n_clusters}")
 async def clustering_agglomerative(n_clusters: int):
@@ -403,6 +399,7 @@ async def clustering_agglomerative(n_clusters: int):
     app.cluster_data = agglomerative.fit_predict(app.normalized_data)
 
     return {"message": f"Agglomerative Clustering completed successfully!"}
+
 
 @router.get("/meanShift")
 async def clustering_meanShift():
@@ -433,16 +430,17 @@ async def meanShift_visulalization():
     png_bytes = pio.to_image(fig, format="png")
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
+
 @router.get("/meanShift/visualization2/{n_clusters}")
 async def meanShift_visulalization2(n_clusters: int):
     if app.cluster_data is None:
         raise HTTPException(status_code=500, detail="No meanShift clustering data found!")
 
-    a = [0 for _ in range(max(app.cluster_data)+1)]
+    a = [0 for _ in range(max(app.cluster_data) + 1)]
     for b in app.cluster_data:
         a[b] += 1
 
-    fig = px.bar(x=[i for i in range(max(app.cluster_data)+1)], y=a,
+    fig = px.bar(x=[i for i in range(max(app.cluster_data) + 1)], y=a,
                  labels={'x': 'Number of cluster', 'y': 'No. of records in cluster'},
                  title='Number of records in each cluster')
 
@@ -479,21 +477,23 @@ async def affinity_visulalization():
     png_bytes = pio.to_image(fig, format="png")
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
+
 @router.get("/affinity/visualization2/{n_clusters}")
 async def affinity_visulalization2(n_clusters: int):
     if app.cluster_data is None:
         raise HTTPException(status_code=500, detail="No Affinity clustering data found!")
 
-    a = [0 for _ in range(max(app.cluster_data)+1)]
+    a = [0 for _ in range(max(app.cluster_data) + 1)]
     for b in app.cluster_data:
         a[b] += 1
 
-    fig = px.bar(x=[i for i in range(max(app.cluster_data)+1)], y=a,
+    fig = px.bar(x=[i for i in range(max(app.cluster_data) + 1)], y=a,
                  labels={'x': 'Number of cluster', 'y': 'No. of records in cluster'},
                  title='Number of records in each cluster')
 
     png_bytes = pio.to_image(fig, format="png")
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
+
 
 @router.get("/cluster_stats/{cluster_id}")
 async def cluster_statistics(cluster_id: int):
@@ -507,6 +507,11 @@ async def cluster_statistics(cluster_id: int):
         return JSONResponse(content=stats.to_dict())
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/get_nclusters")
+async def get_nclusters():
+    return {"nclusters": f"{max(app.cluster_data) + 1}"}
 
 
 # include router
