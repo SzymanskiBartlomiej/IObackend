@@ -11,6 +11,7 @@ import plotly.io as pio
 from starlette.responses import StreamingResponse
 import datetime
 from sklearn.cluster import DBSCAN, AgglomerativeClustering
+from scipy.stats import kurtosis, skew
 
 router = APIRouter()
 app = FastAPI()
@@ -177,6 +178,50 @@ async def convert_to_numeric():
             except:
                 app.numeric_data[column] = app.numeric_data[column].map(string_to_date_to_number)
     return {"message": f"Conversion completed successfully!"}
+
+@router.get("/columnstats")
+async def data_stats(column: str):
+    if app.data is None or app.data.empty:
+        raise HTTPException(status_code=500, detail="No data found!")
+    
+    column_data = None
+    if app.numeric_data is not None:
+        column_data = app.numeric_data[column]
+    else:
+        column_data = app.data[column]
+
+    #descriptive
+    mean = column_data.mean()
+    median = column_data.median()
+    dominants = column_data.mode().tolist() #there could be more than one dominant
+    minimum = column_data.min()
+    maximum = column_data.max()
+    range = np.ptp(column_data)
+    quartiles = column_data.quantile([0.25, 0.5, 0.75]).tolist()
+    std_dev = column_data.std()
+    variance = column_data.var()
+    kurtosis_value = kurtosis(column_data)
+    skewness_value = skew(column_data)
+
+    return {
+        "column_stats": {
+            "mean": mean,
+            "median": median,
+            "dominants": dominants,
+            "min": minimum,
+            "max": maximum,
+            "range": range,
+            "quartiles": quartiles,
+            "standard_deviation": std_dev,
+            "variance": variance,
+            "kurtosis": kurtosis_value,
+            "skewness": skewness_value
+        }
+    }
+
+
+    
+
 
 
 @router.put("/normalize")
