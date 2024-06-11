@@ -276,8 +276,8 @@ async def kMeans_visulalization():
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
 
-@router.get("/kMeans/visualization2/{n_clusters}")
-async def kMeans_visulalization2(n_clusters: int):
+@router.get("/kMeans/visualization2")
+async def kMeans_visulalization2():
     if app.kMeans_data is None:
         raise HTTPException(status_code=500, detail="No kMeans clustering data found!")
 
@@ -324,8 +324,8 @@ async def DBSCAN_visulalization():
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
 
-@router.get("/DBSCAN/visualization2/{n_clusters}")
-async def DBSCAN_visulalization2(n_clusters: int):
+@router.get("/DBSCAN/visualization2")
+async def DBSCAN_visulalization2():
     if app.DBSCAN_data is None:
         raise HTTPException(status_code=500, detail="No kMeans clustering data found!")
 
@@ -373,8 +373,8 @@ async def agglomerative_visulalization():
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
 
-@router.get("/agglomerative/visualization2/{n_clusters}")
-async def agglomerative_visulalization2(n_clusters: int):
+@router.get("/agglomerative/visualization2")
+async def agglomerative_visulalization2():
     if app.cluster_data is None:
         raise HTTPException(status_code=500, detail="No kMeans clustering data found!")
 
@@ -431,8 +431,8 @@ async def meanShift_visulalization():
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
 
-@router.get("/meanShift/visualization2/{n_clusters}")
-async def meanShift_visulalization2(n_clusters: int):
+@router.get("/meanShift/visualization2")
+async def meanShift_visulalization2():
     if app.cluster_data is None:
         raise HTTPException(status_code=500, detail="No meanShift clustering data found!")
 
@@ -478,8 +478,8 @@ async def affinity_visulalization():
     return StreamingResponse(io.BytesIO(png_bytes), media_type="image/png")
 
 
-@router.get("/affinity/visualization2/{n_clusters}")
-async def affinity_visulalization2(n_clusters: int):
+@router.get("/affinity/visualization2")
+async def affinity_visulalization2():
     if app.cluster_data is None:
         raise HTTPException(status_code=500, detail="No Affinity clustering data found!")
 
