@@ -1,3 +1,4 @@
+from matplotlib import pyplot as plt
 import numpy as np
 from fastapi import APIRouter, HTTPException, FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +13,8 @@ from starlette.responses import StreamingResponse
 import datetime
 from sklearn.cluster import DBSCAN, AgglomerativeClustering
 from scipy.stats import kurtosis, skew
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from io import BytesIO
 
 router = APIRouter()
 app = FastAPI()
@@ -220,10 +223,6 @@ async def data_stats(column: str):
     }
 
 
-    
-
-
-
 @router.put("/normalize")
 async def normalize_data(normalization: str):
     if app.numeric_data.empty:
@@ -253,6 +252,34 @@ async def normalize_data(normalization: str):
 
     return {"data": list(app.normalized_data.to_dict(orient="records"))}
 
+@router.get("/normalization/histogram")
+async def normalization_histogram_for_column(column: str):
+    if app.data is None or app.normalized_data is None:
+        raise HTTPException(status_code=500, detail="No data found!")
+
+    #original
+    co = app.data[column]
+    #normalized
+    cn = app.normalized_data[column]
+
+    fig, axs = plt.subplots(2, 1, figsize=(10, 8))
+
+    #original hist
+    axs[0].hist(co, alpha=0.7, color='blue', label='Raw Data')
+    axs[0].set_title('Histogram of Raw Data')
+    # axs[0].set_xlabel('Value')
+    axs[0].set_ylabel('Frequency')
+    #normalized hist
+    axs[1].hist(cn, alpha=0.7, color='blue', label='Normalized Data')
+    axs[1].set_title('Histogram of Normalized Data')
+    axs[1].set_xlabel('Value')
+    axs[1].set_ylabel('Frequency')
+
+    #preparing and returning output
+    output = BytesIO()
+    FigureCanvas(fig).print_png(output)
+    output.seek(0)
+    return StreamingResponse(output, media_type='image/png')
 
 @router.put("/pca")
 async def pca_analysis(n_components: int):
