@@ -586,5 +586,17 @@ async def get_nclusters():
     return {"nclusters": f"{max(app.cluster_data) + 1}"}
 
 
+@router.get("/cluster_data")
+async def get_cluster_data():
+    if app.cluster_data is None:
+        raise HTTPException(status_code=500, detail="No clustering data found!")
+
+    try:
+        app.data.insert(2, "ClusterID", app.cluster_data, True)
+        return JSONResponse(content=app.data.to_dict())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # include router
 app.include_router(router)
