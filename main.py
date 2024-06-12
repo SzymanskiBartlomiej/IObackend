@@ -598,7 +598,7 @@ async def get_cluster_data():
         raise HTTPException(status_code=500, detail="No clustering data found!")
 
     try:
-        app.data.insert(2, "ClusterID", app.cluster_data, True)
+        app.normalized_data.insert(2, "ClusterID", app.cluster_data, True)
         return JSONResponse(content=app.data.to_dict())
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
