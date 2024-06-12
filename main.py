@@ -125,7 +125,7 @@ async def rename_variables(old_name: str, new_name: str):
         try:
             app.numeric_data.rename(columns={old_name: new_name}, inplace=True)
             # app.normalized_data.rename(columns={old_name: new_name}, inplace=True)
-        except Exception as e:
+        except Exception as es:
             print("ojoj")
 
         return {"message": f"Variable '{old_name}' renamed to '{new_name}'"}
