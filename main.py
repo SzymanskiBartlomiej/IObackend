@@ -110,6 +110,13 @@ async def download_file(step: int):
                                      headers={"Content-Disposition": "attachment; filename=data.csv"})
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
+    if step == 4:
+        try:
+            csv_content = app.pca_data.to_csv(index=False).encode('utf-8')
+            return StreamingResponse(iter([csv_content]), media_type="text/csv",
+                                     headers={"Content-Disposition": "attachment; filename=data.csv"})
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
     raise HTTPException(status_code=500, detail="No data found!")
 
